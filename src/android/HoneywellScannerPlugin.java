@@ -52,7 +52,11 @@ public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeRead
     @Override
     public boolean execute(String action, final JSONArray args, final CallbackContext callbackContext)
     throws JSONException {
-        if (action.equals("softwareTriggerStart")) {
+        if(action.equals("test")){
+            callbackContext.sucess("Tests are ok");
+            return true;
+        }
+        else if (action.equals("softwareTriggerStart")) {
             if (barcodeReader != null) {
                 try {
                     barcodeReader.softwareTrigger(true);
