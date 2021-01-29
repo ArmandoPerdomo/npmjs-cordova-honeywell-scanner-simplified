@@ -36,6 +36,8 @@ public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeRead
                 try {
                     barcodeReader.setProperty(BarcodeReader.PROPERTY_TRIGGER_CONTROL_MODE,
                             BarcodeReader.TRIGGER_CONTROL_MODE_CLIENT_CONTROL);
+
+                    barcodeReader.setProperty(BarcodeReader.PROPERTY_DATA_PROCESSOR_LAUNCH_BROWSER, false);
                 } catch (UnsupportedPropertyException e) {
                     e.printStackTrace();
                 }
@@ -136,7 +138,7 @@ public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeRead
         }
         return true;
     }
-    
+
     @Override
     public void onBarcodeEvent(BarcodeReadEvent barcodeReadEvent) {
         if (this.callbackContext != null) {
