@@ -1,29 +1,26 @@
 var execute = require("cordova/exec");
 
+const PLUGIN_NAME = 'HoneywellScannerPlugin';
+
 var honeywell = {
     softwareTriggerStart: function () {
-        return execute(null, null, 'HoneywellScannerPlugin', 'softwareTriggerStart', []);
+        return execute(null, null, PLUGIN_NAME, 'softwareTriggerStart', []);
     },
     softwareTriggerStop: function () {
-        return execute(null, null, 'HoneywellScannerPlugin', 'softwareTriggerStop', []);
+        return execute(null, null, PLUGIN_NAME, 'softwareTriggerStop', []);
     },
-    nativeListen: function (res, err) {
-        return execute(res, err, 'HoneywellScannerPlugin', 'listen', []);
+    listen: function (res, err) {
+        return execute(res, err, PLUGIN_NAME, 'listen', []);
     },
-    listen: function (res, err) { // DEPRECATION WARNING: This will be removed in the next major release, use nativeListen
-        return execute(res, err, 'HoneywellScannerPlugin', 'listen', []);
+    release: function () {
+        return execute(null, null, PLUGIN_NAME, 'release', []);
     },
-    nativeRelease: function () {
-        return execute(null, null, 'HoneywellScannerPlugin', 'release', []);
+    claim: function () {
+        return execute(null, null, PLUGIN_NAME, 'claim', []);
     },
-    release: function () { // DEPRECATION WARNING: This will be removed in the next major release, use nativeRelease
-        return execute(null, null, 'HoneywellScannerPlugin', 'release', []);
-    },
-    nativeClaim: function () {
-        return execute(null, null, 'HoneywellScannerPlugin', 'claim', []);
-    },
-    claim: function () { // DEPRECATION WARNING: This will be removed in the next major release, use nativeRelease
-        return execute(null, null, 'HoneywellScannerPlugin', 'claim', []);
+    test: function (args, success, err) {
+        console.log(success, err, args);
+        return execute(success, err, PLUGIN_NAME, 'test', [args]);
     }
 };
 
