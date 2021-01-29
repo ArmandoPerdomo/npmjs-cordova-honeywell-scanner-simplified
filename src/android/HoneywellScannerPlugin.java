@@ -3,6 +3,7 @@ package com.icsfl.rfsmart.honeywell;
 import android.content.Context;
 import android.util.Log;
 
+import com.honeywell.aidc.*;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
@@ -12,15 +13,9 @@ import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import com.honeywell.aidc.AidcManager;
 import com.honeywell.aidc.AidcManager.CreatedCallback;
-import com.honeywell.aidc.BarcodeFailureEvent;
-import com.honeywell.aidc.BarcodeReadEvent;
-import com.honeywell.aidc.BarcodeReader;
-import com.honeywell.aidc.ScannerUnavailableException;
-import com.honeywell.aidc.ScannerNotClaimedException;
 
-public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeReader.BarcodeListener {
+public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeReader.BarcodeListener, BarcodeReader.TriggerListener {
     private static final String TAG = "HoneywellScanner";
     private static BarcodeReader barcodeReader;
     private AidcManager manager;
@@ -38,6 +33,13 @@ public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeRead
                 manager = aidcManager;
                 barcodeReader = manager.createBarcodeReader();
                 barcodeReader.addBarcodeListener(HoneywellScannerPlugin.this);
+                try {
+                    barcodeReader.setProperty(BarcodeReader.PROPERTY_TRIGGER_CONTROL_MODE,
+                            BarcodeReader.TRIGGER_CONTROL_MODE_CLIENT_CONTROL);
+                } catch (UnsupportedPropertyException e) {
+                    e.printStackTrace();
+                }
+                barcodeReader.addTriggerListener(HoneywellScannerPlugin.this);
                 try {
                     barcodeReader.claim();
                 } catch (ScannerUnavailableException e) {
@@ -175,6 +177,20 @@ public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeRead
                 e.printStackTrace();
                     NotifyError("ScannerUnavailableException2");
             }
+        }
+    }
+
+    @Override
+    public void onTriggerEvent(TriggerStateChangeEvent event) {
+        try {
+            // only handle trigger presses
+            // turn on/off aimer, illumination and decoding
+            barcodeReader.aim(event.getState());
+            barcodeReader.light(event.getState());
+            barcodeReader.decode(event.getState());
+        } catch (ScannerNotClaimedException | ScannerUnavailableException e) {
+            e.printStackTrace();
+            NotifyError("ScannerNotClaimedException | ScannerUnavailableException");
         }
     }
 
