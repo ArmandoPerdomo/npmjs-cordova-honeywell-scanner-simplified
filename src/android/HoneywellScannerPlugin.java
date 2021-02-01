@@ -33,7 +33,7 @@ public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeRead
     throws JSONException {
         this.callbackContext = callbackContext;
         if ("claim".equals(action)) {
-            claimBarcodeReader();
+            initializeAndClaim();
         } else if ("release".equals(action)) {
             releaseBarcodeReader();
             callbackContext.success();
@@ -42,7 +42,7 @@ public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeRead
     }
 
     private void initializeAndClaim(){
-        if(barcodeReader !=null){
+        if(barcodeReader != null){
             claimBarcodeReader();
             return;
         }
@@ -53,7 +53,7 @@ public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeRead
                 manager = aidcManager;
                 barcodeReader = aidcManager.createBarcodeReader();
                 barcodeReader.addBarcodeListener(HoneywellScannerPlugin.this);
-                
+
                 try {
                     barcodeReader.setProperty(BarcodeReader.PROPERTY_TRIGGER_CONTROL_MODE,
                             BarcodeReader.TRIGGER_CONTROL_MODE_AUTO_CONTROL);
