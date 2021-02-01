@@ -45,6 +45,7 @@ public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeRead
     @Override
     public boolean execute(String action, final JSONArray args, final CallbackContext callbackContext)
     throws JSONException {
+        this.callbackContext = callbackContext;
         if ("claim".equals(action)) {
             claimBarcodeReader();
         } else if ("release".equals(action)) {
