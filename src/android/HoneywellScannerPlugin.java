@@ -13,9 +13,7 @@ import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import com.honeywell.aidc.AidcManager.CreatedCallback;
-
-public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeReader.BarcodeListener, BarcodeReader.TriggerListener {
+public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeReader.BarcodeListener {
     private static final String TAG = "HoneywellScanner";
     private static BarcodeReader barcodeReader;
     private AidcManager manager;
@@ -27,24 +25,17 @@ public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeRead
         super.initialize(cordova, webView);
 
         Context context = cordova.getActivity().getApplicationContext();
-        AidcManager.create(context, new CreatedCallback() {
+        AidcManager.create(context, new AidcManager.CreatedCallback() {
             @Override
             public void onCreated(AidcManager aidcManager) {
                 manager = aidcManager;
-                barcodeReader = manager.createBarcodeReader();
+                barcodeReader = aidcManager.createBarcodeReader();
                 barcodeReader.addBarcodeListener(HoneywellScannerPlugin.this);
                 try {
                     barcodeReader.setProperty(BarcodeReader.PROPERTY_TRIGGER_CONTROL_MODE,
-                            BarcodeReader.TRIGGER_CONTROL_MODE_CLIENT_CONTROL);
-
+                            BarcodeReader.TRIGGER_CONTROL_MODE_AUTO_CONTROL);
                     barcodeReader.setProperty(BarcodeReader.PROPERTY_DATA_PROCESSOR_LAUNCH_BROWSER, false);
                 } catch (UnsupportedPropertyException e) {
-                    e.printStackTrace();
-                }
-                barcodeReader.addTriggerListener(HoneywellScannerPlugin.this);
-                try {
-                    barcodeReader.claim();
-                } catch (ScannerUnavailableException e) {
                     e.printStackTrace();
                 }
             }
@@ -54,203 +45,64 @@ public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeRead
     @Override
     public boolean execute(String action, final JSONArray args, final CallbackContext callbackContext)
     throws JSONException {
-        switch (action) {
-            case "softwareTriggerStart":
-                if (barcodeReader != null) {
-                    try {
-                        barcodeReader.softwareTrigger(true);
-                    } catch (ScannerNotClaimedException e) {
-                        e.printStackTrace();
-                        NotifyError("ScannerNotClaimedException");
-                    } catch (ScannerUnavailableException e) {
-                        e.printStackTrace();
-                        NotifyError("ScannerUnavailableException");
-                    }
-                }
-                break;
-            case "softwareTriggerStop":
-                if (barcodeReader != null) {
-                    try {
-                        barcodeReader.softwareTrigger(false);
-                    } catch (ScannerNotClaimedException e) {
-                        e.printStackTrace();
-                        NotifyError("ScannerNotClaimedException");
-                    } catch (ScannerUnavailableException e) {
-                        e.printStackTrace();
-                        NotifyError("ScannerUnavailableException");
-                    }
-                }
-                break;
-            case "listen":
-                this.callbackContext = callbackContext;
-                PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
-                result.setKeepCallback(true);
-                this.callbackContext.sendPluginResult(result);
-                if (barcodeReader != null) {
-                    try {
-                        barcodeReader.softwareTrigger(false);
-                    } catch (ScannerNotClaimedException e) {
-                        e.printStackTrace();
-                        NotifyError("ScannerNotClaimedException2");
-                    } catch (ScannerUnavailableException e) {
-                        e.printStackTrace();
-                        NotifyError("ScannerUnavailableException2");
-                    }
-                }
-                break;
-            case "claim":
-                if (barcodeReader != null) {
-                    try {
-                        barcodeReader.claim();
-                    } catch (ScannerUnavailableException e) {
-                        e.printStackTrace();
-                        NotifyError("Scanner unavailable");
-                    }
-                }
-                if (barcodeReader != null) {
-                    try {
-                        barcodeReader.softwareTrigger(false);
-                    } catch (ScannerNotClaimedException e) {
-                        e.printStackTrace();
-                        NotifyError("ScannerNotClaimedException2");
-                    } catch (ScannerUnavailableException e) {
-                        e.printStackTrace();
-                        NotifyError("ScannerUnavailableException2");
-                    }
-                }
-                break;
-            case "release":
-                if (barcodeReader != null) {
-                    barcodeReader.release();
-                }
-                if (barcodeReader != null) {
-                    try {
-                        barcodeReader.softwareTrigger(false);
-                    } catch (ScannerNotClaimedException e) {
-                        e.printStackTrace();
-                        NotifyError("ScannerNotClaimedException2");
-                    } catch (ScannerUnavailableException e) {
-                        e.printStackTrace();
-                        NotifyError("ScannerUnavailableException2");
-                    }
-                }
-                break;
+        if ("claim".equals(action)) {
+            claimBarcodeReader();
+        } else if ("release".equals(action)) {
+            releaseBarcodeReader();
+            callbackContext.success();
         }
         return true;
     }
 
+    private void claimBarcodeReader() {
+        try {
+            barcodeReader.claim();
+        } catch (ScannerUnavailableException e) {
+            e.printStackTrace();
+            NotifyError("Unable to claim barcode, no scanner available. Error: " + e.getMessage());
+        }
+    }
+
+    private void releaseBarcodeReader(){
+        barcodeReader.release();
+    }
+
+    private void destroyBarcodeReader(){
+        barcodeReader.removeBarcodeListener(this);
+        barcodeReader.close();
+        manager.close();
+    }
+
     @Override
     public void onBarcodeEvent(BarcodeReadEvent barcodeReadEvent) {
-        if (this.callbackContext != null) {
-            PluginResult result = new PluginResult(PluginResult.Status.OK, barcodeReadEvent.getBarcodeData());
-            result.setKeepCallback(true);
-            this.callbackContext.sendPluginResult(result);
-        }
-        if (barcodeReader != null) {
-            try {
-                barcodeReader.softwareTrigger(false);
-            } catch (ScannerNotClaimedException e) {
-                e.printStackTrace();
-                NotifyError("ScannerNotClaimedException2");
-            } catch (ScannerUnavailableException e) {
-                e.printStackTrace();
-                    NotifyError("ScannerUnavailableException2");
-            }
-        }
+        this.callbackContext.success(barcodeReadEvent.getBarcodeData());
     }
 
     @Override
     public void onFailureEvent(BarcodeFailureEvent barcodeFailureEvent) {
         NotifyError("Scan has failed");
-        if (barcodeReader != null) {
-            try {
-                barcodeReader.softwareTrigger(false);
-            } catch (ScannerNotClaimedException e) {
-                e.printStackTrace();
-                NotifyError("ScannerNotClaimedException2");
-            } catch (ScannerUnavailableException e) {
-                e.printStackTrace();
-                    NotifyError("ScannerUnavailableException2");
-            }
-        }
-    }
-
-    @Override
-    public void onTriggerEvent(TriggerStateChangeEvent event) {
-        try {
-            // only handle trigger presses
-            // turn on/off aimer, illumination and decoding
-            barcodeReader.aim(event.getState());
-            barcodeReader.light(event.getState());
-            barcodeReader.decode(event.getState());
-        } catch (ScannerNotClaimedException | ScannerUnavailableException e) {
-            e.printStackTrace();
-            NotifyError("ScannerNotClaimedException | ScannerUnavailableException");
-        }
     }
 
     @Override
     public void onResume(boolean multitasking) {
         super.onResume(multitasking);
-        if (barcodeReader != null) {
-            try {
-                barcodeReader.claim();
-            } catch (ScannerUnavailableException e) {
-                e.printStackTrace();
-                NotifyError("The scanner is unavailable");
-            }
-        }
-        if (barcodeReader != null) {
-            try {
-                barcodeReader.softwareTrigger(false);
-            } catch (ScannerNotClaimedException e) {
-                e.printStackTrace();
-                NotifyError("ScannerNotClaimedException2");
-            } catch (ScannerUnavailableException e) {
-                e.printStackTrace();
-                    NotifyError("ScannerUnavailableException2");
-            }
-        }
+        claimBarcodeReader();
     }
 
     @Override
     public void onPause(boolean multitasking) {
         super.onPause(multitasking);
-        if (barcodeReader != null) {
-            barcodeReader.release();
-        }
-        if (barcodeReader != null) {
-            try {
-                barcodeReader.softwareTrigger(false);
-            } catch (ScannerNotClaimedException e) {
-                e.printStackTrace();
-                NotifyError("ScannerNotClaimedException2");
-            } catch (ScannerUnavailableException e) {
-                e.printStackTrace();
-                    NotifyError("ScannerUnavailableException2");
-            }
-        }
+        releaseBarcodeReader();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-
-        if (barcodeReader != null) {
-            barcodeReader.close();
-            barcodeReader = null;
-        }
-
-        if (manager != null) {
-            manager.close();
-        }
+        releaseBarcodeReader();
+        destroyBarcodeReader();
     }
 
     private void NotifyError(String error) {
-        if (this.callbackContext != null) {
-            PluginResult result = new PluginResult(PluginResult.Status.ERROR, error);
-            result.setKeepCallback(true);
-            this.callbackContext.sendPluginResult(result);
-        }
+        this.callbackContext.error(error);
     }
 }
