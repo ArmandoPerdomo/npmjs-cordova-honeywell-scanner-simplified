@@ -18,28 +18,14 @@ public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeRead
     private static BarcodeReader barcodeReader;
     private AidcManager manager;
     private CallbackContext callbackContext;
+    private Context applicationContext;
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
 
         super.initialize(cordova, webView);
 
-        Context context = cordova.getActivity().getApplicationContext();
-        AidcManager.create(context, new AidcManager.CreatedCallback() {
-            @Override
-            public void onCreated(AidcManager aidcManager) {
-                manager = aidcManager;
-                barcodeReader = aidcManager.createBarcodeReader();
-                barcodeReader.addBarcodeListener(HoneywellScannerPlugin.this);
-                try {
-                    barcodeReader.setProperty(BarcodeReader.PROPERTY_TRIGGER_CONTROL_MODE,
-                            BarcodeReader.TRIGGER_CONTROL_MODE_AUTO_CONTROL);
-                    barcodeReader.setProperty(BarcodeReader.PROPERTY_DATA_PROCESSOR_LAUNCH_BROWSER, false);
-                } catch (UnsupportedPropertyException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        this.applicationContext = cordova.getActivity().getApplicationContext();
     }
 
     @Override
@@ -53,6 +39,32 @@ public class HoneywellScannerPlugin extends CordovaPlugin implements BarcodeRead
             callbackContext.success();
         }
         return true;
+    }
+
+    private void initializeAndClaim(){
+        if(barcodeReader !=null){
+            claimBarcodeReader();
+            return;
+        }
+
+        AidcManager.create(this.applicationContext, new AidcManager.CreatedCallback() {
+            @Override
+            public void onCreated(AidcManager aidcManager) {
+                manager = aidcManager;
+                barcodeReader = aidcManager.createBarcodeReader();
+                barcodeReader.addBarcodeListener(HoneywellScannerPlugin.this);
+                
+                try {
+                    barcodeReader.setProperty(BarcodeReader.PROPERTY_TRIGGER_CONTROL_MODE,
+                            BarcodeReader.TRIGGER_CONTROL_MODE_AUTO_CONTROL);
+                    barcodeReader.setProperty(BarcodeReader.PROPERTY_DATA_PROCESSOR_LAUNCH_BROWSER, false);
+                } catch (UnsupportedPropertyException e) {
+                    e.printStackTrace();
+                }
+
+                claimBarcodeReader();
+            }
+        });
     }
 
     private void claimBarcodeReader() {
